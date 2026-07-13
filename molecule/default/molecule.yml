@@ -1,6 +1,6 @@
 ---
 driver:
-  name: docker  
+  name: podman  
 
 platforms:
   - name: ubuntu-jupyter
@@ -21,7 +21,7 @@ platforms:
      #   /run: ""
       #  /tmp: ""
     env:
-      container: docker
+      container: podman
 
 #provisioner:
   #name: ansible
