@@ -9,6 +9,7 @@ platforms:
     systemd: true
     privileged: true
     command: /sbin/init
+    cgroupns_mode: host
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     env:
