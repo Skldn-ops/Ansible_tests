@@ -15,8 +15,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Molecule
-        uses: bec-galaxy/setup-molecule@v1   # устанавливает Python, pip, molecule, docker
-        
+        uses: bec-galaxy/setup-molecule@v1
+
       - name: Install Molecule Docker driver
         run: pip install molecule-docker
 
