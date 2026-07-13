@@ -1,0 +1,23 @@
+---
+driver:
+  name: docker
+
+platforms:
+  - name: ubuntu-jupyter
+    image: "docker.io/geerlingguy/docker-ubuntu2404-ansible:latest"
+    pre_build_image: true
+    systemd: true
+    privileged: true
+    command: /sbin/init
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    env:
+      container: docker
+
+provisioner:
+  name: ansible
+  # playbooks:
+  #   converge: converge.yml
+
+verifier:
+  name: ansible
