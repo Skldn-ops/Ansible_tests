@@ -1,0 +1,115 @@
+---
+- name: Converge install jupyetr lab
+  hosts: all
+  become: yes 
+
+  tasks:
+    #- name: Set DNS resolver
+      #ansible.builtin.copy:
+        #dest: /etc/resolv.conf
+        #content: |
+         # nameserver 8.8.8.8
+        #  nameserver 1.1.1.1
+       # mode: '0644'
+      #become: yes
+  
+    - name: jupusr create or exists
+      ansible.builtin.user:
+        name: jupusr
+        state: present
+        create_home: yes
+        shell: /bin/bash
+      become: yes
+
+    #- name: Update apt cache with timeout
+     # ansible.builtin.command:
+      #  cmd: timeout 130 apt-get update
+      #become: yes
+      #ignore_errors: yes
+      #register: apt_update_result
+      #changed_when: apt_update_result.rc == 0
+
+
+    - name: Install required system packages
+      ansible.builtin.apt:
+        name:
+          - python3-pip
+          - python3-venv
+          #- python3-dev
+          #- build-essential
+        state: present
+        update_cache: yes
+      become: yes
+
+
+    - name: Create virtual environment and install Jupyter Lab
+      ansible.builtin.shell: |
+        python3 -m venv /home/jupusr/jupyterlab_env
+        /home/jupusr/jupyterlab_env/bin/pip install --upgrade pip
+        /home/jupusr/jupyterlab_env/bin/pip install jupyterlab
+        /home/jupusr/jupyterlab_env/bin/jupyter lab --generate-config
+      become: yes
+      become_user: jupusr
+      args:
+        creates: /home/jupusr/jupyterlab_env/bin/jupyter  #Если файл уже есть, не выполнять заново
+
+
+    - name: Configure Jupyter Lab server settings
+      ansible.builtin.blockinfile:
+        path: /home/jupusr/.jupyter/jupyter_lab_config.py
+        block: |
+          c.ServerApp.ip = "0.0.0.0"
+          c.ServerApp.port = 14500
+          c.ServerApp.open_browser = False
+          c.ServerApp.token = ''
+          c.ServerApp.password = ''
+        insertafter: BOF
+        create: no
+        #owner: jupusr
+        #group: jupusr
+        #mode: '0644'
+      become: yes
+      become_user: jupusr
+
+
+    - name: Create Jupyter Lab systemd service file
+      ansible.builtin.blockinfile:
+        path: /etc/systemd/system/jupyterlab.service
+        block: |
+          [Unit]
+          Description=Jupyter Lab Service
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=jupusr
+          WorkingDirectory=/home/jupusr/jupyterlab_env
+          Environment="PATH=/home/jupusr/jupyterlab_env/bin:/usr/local/bin:/usr/bin:/bin"
+          ExecStart=/home/jupusr/jupyterlab_env/bin/jupyter lab
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        insertafter: BOF
+        create: yes
+        mode: '0644'
+      become: yes
+      notify: restart jupyterlab
+
+
+    - name: Enable and start Jupyter Lab
+      ansible.builtin.systemd:
+        name: jupyterlab
+        enabled: yes
+        state: started
+        daemon_reload: yes
+      become: yes
+
+  handlers:
+    - name: restart jupyterlab
+      ansible.builtin.systemd:
+        name: jupyterlab
+        state: restarted
+        daemon_reload: yes
+      become: yes
