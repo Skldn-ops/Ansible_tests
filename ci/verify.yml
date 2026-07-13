@@ -1,0 +1,15 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Check if Jupyter Lab is running as jupusr
+      ansible.builtin.shell: |
+        ps -eo user,comm | grep -E '^jupusr.*jupyter-lab' | grep -v grep
+      register: process_check
+      changed_when: false
+      failed_when: process_check.rc != 0
+
+    - name: Display Jupyter Lab process info
+      ansible.builtin.debug:
+        msg: "Jupyter Lab is running as jupusr: {{ process_check.stdout }}"
