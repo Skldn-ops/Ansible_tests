@@ -21,7 +21,7 @@ platforms:
      #   /run: ""
       #  /tmp: ""
     env:
-      container: podman
+      container: docker
 
 #provisioner:
   #name: ansible
