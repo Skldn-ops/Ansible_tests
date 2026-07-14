@@ -25,8 +25,8 @@ jobs:
           pip install molecule molecule-docker ansible-lint
           pip install --upgrade molecule-docker
 
-      - name: Install Molecule Docker driver
-        run: pip install molecule-docker
+      #- name: Install Molecule Docker driver
+        #run: pip install molecule-docker
 
       - name: Run Molecule tests (ci scenario)
         run: molecule test -s ci
