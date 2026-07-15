@@ -1,0 +1,177 @@
+%\documentclass[16pt]{extarticle} 
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{listings}
+\usepackage{attachfile}
+\usepackage{dirtree}
+\usepackage[dvipsnames]{xcolor}
+\makeatletter
+\def\AF@Color{0 0 1}  % Синий (RGB)
+\makeatother
+
+\lstset{
+    language=bash,        % Используем bash, так как он отлично показывает строки с командами
+    basicstyle=\ttfamily\small,
+    numbers=left,
+    numberstyle=\tiny,
+    breaklines=true,
+    showstringspaces=false,
+    frame=single,
+    % Добавим немного цветов для наглядности (опционально)
+    commentstyle=\color{gray},
+    keywordstyle=\color{blue},
+    stringstyle=\color{teal}
+}
+
+\geometry{a4paper, left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+% Отключение нумерации страниц на титуле
+\pagenumbering{gobble}
+
+\begin{document}
+
+
+\begin{titlepage}
+    \centering
+    \vspace*{\fill}
+    
+    {\Huge\bfseries Base Github workflows for Ansible}
+    
+    \vspace{0.5cm}
+    
+    {\Large Тимофей Семисоха}
+    
+    \vspace*{\fill}
+\end{titlepage}
+
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{2}
+
+
+{\Large\bfseries Base Github workflows for Ansible} \par
+В этом небольшом тексте рассмотрим как можно использовать github workflows для автоматического тестирования ansible плейбуков в репозитории с помощью molecule\par\vspace{10pt}
+{\Large\bfseries Структура репозитория} \par
+Для работы workflows нужно, чтобы репозиторий был построен по следующему принципу:\\
+\dirtree{%
+.1 .github/workflows.
+.2 molecule.yml.
+.1 molecule.
+.2 ci.
+.3 converge.yml.
+.3 molecule.yml.
+.3 verify.yml.
+.2 default.
+.3 converge.yml.
+.3 molecule.yml.
+.3 verify.yml.
+}
+Суть следующая - у нас есть основные папки, это .github для настроек, о которых мы сообщаем github. И molecule, в которой соблюдается классическая схема организации папок для Molecule.\par\vspace{10pt}
+{\Large\bfseries Папки для Molecule}\par
+Внутри указаны базовые группы сценариев, это ci и default. Можно сказать, что это сами тесты, которые мы хотим проводить. Если бы мы хотели создать еще один тест, то в той же папке molecule нужно было бы создать папку "onemoretest".\\
+В каждом из таких тестов лежат сценарии, по которым мы собираемся проводить тестирование. В структуре указаны минимальные три файла, с которыми Molecule может отработать. Если нужно провести более серьезное тестирование, в папку к имеющимся сценариям можно добавить остальные, приемлемые для Molecule (например prepare.yml).\\
+На десктопе при такой структуре файлов default тест запускался бы командой molecule test. Тест ci запускался бы командой molecule test -s ci
+\newpage
+{\Large\bfseries Workflows}\par
+Перейдем к папке .github с действиями для гитхаба. Для тестов с помощью молекулы нам понадобится файл molecule.yml, в котором мы расскажем гитхабу, каких действий от него ожидаем.\\
+\begin{lstlisting}
+name: Molecule Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  molecule:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+        
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install molecule molecule-docker ansible-lint
+          pip install --upgrade molecule-docker
+          
+
+      - name: Run Molecule tests (ci scenario)
+        run: molecule test -s ci
+        env:
+          PY_COLORS: "1"
+          ANSIBLE_FORCE_COLOR: "1"
+          ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "true"
+\end{lstlisting}
+После добавления такого файла в указанную директорию, Github начнет тестировать наш репозиторий с помощью Molecule после каждого изменения в основной ветке. Рассмотрим подробнее, из чего состоит этот файл, и чем конкретно будет заниматься Github.\\
+\newpage
+\begin{lstlisting}
+name: Molecule Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+\end{lstlisting}\par
+Это верхушка нашего файла. Здесь указано название сценария, под ним мы указываем после каких действий мы хотим проводить тестирование. В примере указаны пуши и пул реквесты в мейн.\par\vspace{10pt}
+
+\begin{lstlisting}
+jobs:
+  molecule:
+    runs-on: ubuntu-latest
+\end{lstlisting}\par
+Здесь указываем работы, которые нужно будет провести, и с помощью каких инструментов. В нашем случае говорим, что хотим контейнер с ubuntu-latest, в котором будет запущена Molecule. (Контейнеры, которые создает Molecule будут созданы внутри этого контейнера)
+\begin{lstlisting}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+\end{lstlisting}\par
+Здесь и далее перечисляются шаги, которые будут выполнены для тестирования.\\
+actions / checkout@v4 используется для загрузки файлов из репозитория в контейнер в котором будет запускаться Molecule.\par\vspace{10pt}
+\begin{lstlisting}
+- name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+\end{lstlisting}\par
+Здесь Github скачивает python версии "3.12" и добавляет его в PATH. Все последующие команды будут выполняться этим python, а не встроенным в Ubuntu.\par\vspace{10pt}
+\begin{lstlisting}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install molecule molecule-docker ansible-lint
+          pip install --upgrade molecule-docker
+\end{lstlisting}\par
+Скачиваем Molecule, драйвер для Docker и утилиту для статического анализа скриптов ansible\par\vspace{10pt}
+\newpage
+
+\begin{lstlisting}
+      - name: Run Molecule tests (ci scenario)
+        run: molecule test -s ci
+        env:
+          PY_COLORS: "1"
+          ANSIBLE_FORCE_COLOR: "1"
+          ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "true"
+\end{lstlisting}\par
+Запускаем тест ci. Ниже устанавливаются цвета для логов. 
+Дополнительно здесь указан параметр для замены ошибок, связанных с некорректыми условиями, на предупреждения. По почти подтвержденной информации, в старых версиях скриптов можно было полагаться на истинность небулевых типов, а сейчас так нельзя. Для совместимости со старой логикой можно воспользоваться ANSIBLE BROKEN CONDITIONALS. \\
+Возможно, это было важно именно для моего плейбука. Но если столкнетесь с ошибками логики, отдаленно связанными с вашим ansible скриптом, можете попробовать добавить эту строку.\par\vspace{10pt}
+
+
+
+
+
+\end{document}
