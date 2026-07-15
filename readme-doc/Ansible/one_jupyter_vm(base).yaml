@@ -1,0 +1,53 @@
+- name: Создать VM в OpenStack
+  hosts: localhost
+  tasks:
+    - name: Запустить инстанс
+      openstack.cloud.server:
+        name: ansible_vm
+        image: Ubuntu-24.04
+        flavor: cpu1.ram1.hdd10
+        key_name: key
+        network: net
+        auto_ip: no                   #Не будет публичного ip
+        security_groups: 
+          - default
+        state: present
+        wait: true
+      register: vm_info
+
+#    - name: Debug - show VM info
+#      ansible.builtin.debug:
+#        var: vm_info
+
+    - name: Ожидаем ssh
+      ansible.builtin.wait_for:
+        host: "{{ vm_info.server.addresses['net'][0].addr }}"
+        port: 22
+        timeout: 300
+        state: started
+
+    - name: Установка через apt
+      ansible.builtin.apt:
+        name:
+          - python3-pip
+          - python3-venv
+        state: present
+        update_cache: yes
+      delegate_to: "{{ vm_info.server.addresses['net'][0].addr }}"
+      remote_user: ubuntu
+      become: yes
+      vars:
+        ansible_ssh_private_key_file: ./key.pem
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    
+    - name: Установка Jupyter
+      ansible.builtin.shell: |
+        python3 -m venv /home/ubuntu/jupyter_env
+        source /home/ubuntu/jupyter_env/bin/activate
+        /home/ubuntu/jupyter_env/bin/pip install jupyter
+      delegate_to: "{{ vm_info.server.addresses['net'][0].addr }}"
+      remote_user: ubuntu
+      become: no
+      vars:
+        ansible_ssh_private_key_file: ./key.pem
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
