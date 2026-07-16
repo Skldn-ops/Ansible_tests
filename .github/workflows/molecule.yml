@@ -31,7 +31,7 @@ jobs:
           pip install molecule molecule-docker ansible-lint
           pip install --upgrade molecule-docker
       - name: Run Molecule tests (ci scenario)
-        run: molecule test -s ci
+        run: molecule test -s default
         env:
           PY_COLORS: "1"
           ANSIBLE_FORCE_COLOR: "1"
