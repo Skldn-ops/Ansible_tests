@@ -33,7 +33,7 @@
         /home/{{ jupyter_user }}/jupyterlab_env/bin/pip install jupyterlab
         /home/{{ jupyter_user }}/jupyterlab_env/bin/jupyter lab --generate-config
       become: yes
-      become_user: {{ jupyter_user }}
+      become_user: "{{ jupyter_user }}"
       args:
         creates: /home/{{ jupyter_user }}/jupyterlab_env/bin/jupyter  #Если файл уже есть, не выполнять заново
 
