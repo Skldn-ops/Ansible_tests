@@ -2,11 +2,13 @@
 - name: Install jupyetr lab
   hosts: all
   become: yes 
-
+  vars:
+    jupyter_port: "{{ lookup('env', 'JUPYTER_PORT') | default('14500', true) }}"
+    jupyter_user: "{{ lookup('env', 'JUPYTER_USER') | default('jupusr', true) }}"
   tasks:
-    - name: jupusr create or exists
+    - name: jupyter_user create or exists
       ansible.builtin.user:
-        name: jupusr
+        name: "{{ jupyter_user }}"
         state: present
         create_home: yes
         shell: /bin/bash
@@ -27,21 +29,21 @@
     - name: Create virtual environment and install Jupyter Lab
       ansible.builtin.shell: |
         python3 -m venv /home/jupusr/jupyterlab_env
-        /home/jupusr/jupyterlab_env/bin/pip install --upgrade pip
-        /home/jupusr/jupyterlab_env/bin/pip install jupyterlab
-        /home/jupusr/jupyterlab_env/bin/jupyter lab --generate-config
+        /home/{{ jupyter_user }}/jupyterlab_env/bin/pip install --upgrade pip
+        /home/{{ jupyter_user }}/jupyterlab_env/bin/pip install jupyterlab
+        /home/{{ jupyter_user }}/jupyterlab_env/bin/jupyter lab --generate-config
       become: yes
-      become_user: jupusr
+      become_user: {{ jupyter_user }}
       args:
-        creates: /home/jupusr/jupyterlab_env/bin/jupyter  #Если файл уже есть, не выполнять заново
+        creates: /home/{{ jupyter_user }}/jupyterlab_env/bin/jupyter  #Если файл уже есть, не выполнять заново
 
 
     - name: Configure Jupyter Lab server settings
       ansible.builtin.blockinfile:
-        path: /home/jupusr/.jupyter/jupyter_lab_config.py
+        path: /home/{{ jupyter_user }}/.jupyter/jupyter_lab_config.py
         block: |
           c.ServerApp.ip = "0.0.0.0"
-          c.ServerApp.port = 14500
+          c.ServerApp.port = {{ jupyter_user }}
           c.ServerApp.open_browser = False
           c.ServerApp.token = ''
           c.ServerApp.password = ''
@@ -64,10 +66,10 @@
 
           [Service]
           Type=simple
-          User=jupusr
-          WorkingDirectory=/home/jupusr/jupyterlab_env
-          Environment="PATH=/home/jupusr/jupyterlab_env/bin:/usr/local/bin:/usr/bin:/bin"
-          ExecStart=/home/jupusr/jupyterlab_env/bin/jupyter lab
+          User={{ jupyter_user }}
+          WorkingDirectory=/home/{{ jupyter_user }}/jupyterlab_env
+          Environment="PATH=/home/{{ jupyter_user }}/jupyterlab_env/bin:/usr/local/bin:/usr/bin:/bin"
+          ExecStart=/home/{{ jupyter_user }}/jupyterlab_env/bin/jupyter lab
           Restart=always
           RestartSec=10
 
