@@ -27,4 +27,6 @@ jobs:
           PY_COLORS: "1"
           ANSIBLE_FORCE_COLOR: "1"
           ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "true"
+          JUPYTER_PORT: "14500"
+          JUPYTER_USER: "jupusr"
   
