@@ -15,6 +15,10 @@ jobs:
         run: pip install ansible-lint
       - name: Run linter
         run: ansible-lint playbooks/
+        env:
+          PY_COLORS: "1"
+          ANSIBLE_FORCE_COLOR: "1"
+          ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "true"
   
   molecule-default:
     runs-on: ubuntu-latest
