@@ -1,0 +1,39 @@
+name: Molecule Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ansible-lint
+        run: pip install ansible-lint
+      - name: Run linter
+        run: ansible-lint playbooks/
+  
+  molecule-default:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install molecule molecule-docker ansible-lint
+          pip install --upgrade molecule-docker
+      - name: Run Molecule tests (ci scenario)
+        run: molecule test -s ci
+        env:
+          PY_COLORS: "1"
+          ANSIBLE_FORCE_COLOR: "1"
+          ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "true"
+  
