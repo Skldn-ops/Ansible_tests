@@ -17,8 +17,8 @@ platforms:
 
 provisioner:
   name: ansible
-   playbooks:
-     converge: ../../playbooks/jupyterlab.yml
+  playbooks:
+    converge: ../../playbooks/jupyterlab.yml
 
 verifier:
   name: ansible
